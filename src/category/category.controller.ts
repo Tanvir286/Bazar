@@ -14,7 +14,7 @@ export class CategoryController {
   @UseGuards(JwtAuthGuard, AuthenticationGuard)
   @Post('createCategory')
   create(@Body() createCategoryDto: CreateCategoryDto,
-        @Req() req: any) {
+         @Req() req: any) {
   const userId = req.user.userId;
   console.log('Authenticated User ID:', userId); 
   return this.categoryService.create(createCategoryDto, userId);
@@ -26,18 +26,28 @@ export class CategoryController {
     return this.categoryService.findAll();
   }
 
-  @Get(':id')
+  // get single category
+  @Get('categorybyId/:id')
   findOne(@Param('id') id: string) {
     return this.categoryService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
-    return this.categoryService.update(+id, updateCategoryDto);
+  // update category
+  @UseGuards(JwtAuthGuard, AuthenticationGuard)
+  @Patch('updatebyId/:id')
+  update(@Param('id') id: string,
+         @Body() updateCategoryDto: UpdateCategoryDto,
+         @Req() req: any) {
+  const userId = req.user.userId;
+  return this.categoryService.update(+id, updateCategoryDto, userId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.categoryService.remove(+id);
+  // delete category
+  @UseGuards(JwtAuthGuard, AuthenticationGuard)
+  @Delete('deletebyId/:id')
+  remove(@Param('id') id: string,
+         @Req() req: any) {
+    const userId = req.user.userId;
+    return this.categoryService.remove(+id, userId);
   }
 }
