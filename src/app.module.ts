@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import appConfig from './config/app.config';
 import { ConfigModule } from '@nestjs/config';
 import { CurrentUserMiddleware } from './utility/middleware/current-user.middleware';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { CurrentUserMiddleware } from './utility/middleware/current-user.middlew
       load:[appConfig]
     }),
     PrismaModule,
-    AuthModule
+    AuthModule,
+    CategoryModule
   ],
   controllers: [AppController],
   providers: [AppService],

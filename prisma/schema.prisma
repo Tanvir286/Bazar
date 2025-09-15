@@ -21,4 +21,22 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   role      Role     @default(user)
+
+  //  relation field (একজন user-এর সব category)
+  categories Category[]
 }
+
+model Category {
+  id                     Int      @id @default(autoincrement())
+  categoryname           String   @unique
+  categorydescription    String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  //  relation to User
+  userId                 Int      // foreign key
+  user                   User     @relation(fields: [userId], references: [id])
+
+  
+}
+
