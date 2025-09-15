@@ -20,7 +20,8 @@ export class CategoryController {
   return this.categoryService.create(createCategoryDto, userId);
   }
 
-  @Get()
+  // get all category
+  @Get('allCategory')
   findAll() {
     return this.categoryService.findAll();
   }

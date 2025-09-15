@@ -49,8 +49,20 @@ export class CategoryService {
     };
   }
 
-  findAll() {
-    return `This action returns all category`;
+  
+  async findAll() {
+
+    const categories = await this.prisma.category.findMany({
+      include: {
+        user: { select: { name: true} },
+      },
+    });
+
+    return categories.map(category => ({
+      id: category.id,
+      categoryname: category.categoryname,
+      createCategoryOnwer: category.user.name,
+    }));
   }
 
   findOne(id: number) {
