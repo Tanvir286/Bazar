@@ -15,7 +15,7 @@ export class ProductController {
   // create product
   @UseGuards(JwtAuthGuard, AuthenticationGuard,RolesGuard)
   @Roles('admin')
-  @Post()
+  @Post('createProduct')
   create(@Body() createProductDto: CreateProductDto,
          @Req() req: any) {
   const userId = req.user.userId;
@@ -23,23 +23,37 @@ export class ProductController {
   }
 
   // get all product
-  @Get()
+  @Get('allProducts')
   findAll() {
     return this.productService.findAll();
   }
 
-  @Get(':id')
+  // get single product by id
+  @Get('singlebyId/:id')
   findOne(@Param('id') id: string) {
     return this.productService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productService.update(+id, updateProductDto);
+  // update product by id
+  @UseGuards(JwtAuthGuard, AuthenticationGuard,RolesGuard)
+  @Roles('admin')
+  @Patch('updatebyId/:id')
+  update(@Param('id') id: string, 
+         @Body() updateProductDto: UpdateProductDto,
+         @Req() req: any) {
+  const userId = req.user.userId;
+  return this.productService.update(+id, updateProductDto, userId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productService.remove(+id);
+  // delete product by id
+  @UseGuards(JwtAuthGuard, AuthenticationGuard,RolesGuard)
+  @Roles('admin')
+  @Delete('deletebyId/:id')
+  remove(@Param('id') id: string,
+         @Req() req: any) {
+  const userId = req.user.userId;
+  return this.productService.remove(+id, userId);
   }
+
+
 }
