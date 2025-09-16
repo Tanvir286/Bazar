@@ -24,6 +24,9 @@ model User {
 
   //  relation field (একজন user-এর সব category)
   categories Category[]
+
+  // এক user-এর সব প্রোডাক্ট
+  products   Product[]
 }
 
 model Category {
@@ -36,7 +39,26 @@ model Category {
   //  relation to User
   userId                 Int      // foreign key
   user                   User     @relation(fields: [userId], references: [id])
-
+  
+  // এক ক্যাটাগরির সব প্রোডাক্ট
+  products               Product[]
   
 }
 
+model Product {
+  id               Int      @id @default(autoincrement())
+  producttitle     String
+  productdescription String
+  productprice     Decimal   @db.Decimal(10,2)  // price দুই decimal পর্যন্ত
+  productstock     Decimal   @db.Decimal(10,2)  // stock দুই decimal পর্যন্ত
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // relation to Category
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  // relation to User
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+}
