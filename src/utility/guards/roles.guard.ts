@@ -1,4 +1,3 @@
-// src/common/guards/roles.guard.ts
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
@@ -20,7 +19,8 @@ export class RolesGuard implements CanActivate {
     const { user } = context.switchToHttp().getRequest();
 
     if (!requiredRoles.includes(user.role)) {
-      throw new ForbiddenException('Access denied: Admins only');
+      const allowedRoles = requiredRoles.join(', ');
+      throw new ForbiddenException(`Access denied: Only ${allowedRoles} can access this route`);
     }
 
     return true;

@@ -143,13 +143,13 @@ export class ProductService {
     }
 
     
-   
     const data: any = {
       ...updateProductDto, 
     };
 
     
     if (updateProductDto.productcategory) {
+
       const category = await this.prisma.category.findUnique({
         where: { id: updateProductDto.productcategory },
       });
@@ -158,7 +158,6 @@ export class ProductService {
         throw new NotFoundException('Category not found');
       }
 
-      
       delete data.productcategory;
      
       data.category = { connect: { id: updateProductDto.productcategory } };

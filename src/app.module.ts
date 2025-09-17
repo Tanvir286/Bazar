@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config';
 import { CurrentUserMiddleware } from './utility/middleware/current-user.middleware';
 import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -17,7 +18,8 @@ import { ProductModule } from './product/product.module';
     PrismaModule,
     AuthModule,
     CategoryModule,
-    ProductModule
+    ProductModule,
+    ReviewModule
   ],
   controllers: [AppController],
   providers: [AppService],
