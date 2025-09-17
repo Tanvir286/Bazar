@@ -30,18 +30,30 @@ export class ReviewController {
     return this.reviewService.findAll();
   }
 
-  @Get(':id')
+  // get single review by id
+  @Get('singlebyId/:id')
   findOne(@Param('id') id: string) {
     return this.reviewService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateReviewDto: UpdateReviewDto) {
-    return this.reviewService.update(+id, updateReviewDto);
+  // update review by id
+  @UseGuards(JwtAuthGuard, AuthenticationGuard,RolesGuard)
+  @Roles('user')
+  @Patch('updatebyId/:id')
+  update(@Param('id') id: string, 
+         @Body() updateReviewDto: UpdateReviewDto,
+         @Req() req: any
+  ) {
+  const userId = req.user.userId;
+  return this.reviewService.update(+id, updateReviewDto, userId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.reviewService.remove(+id);
+  // delete review by id
+  @UseGuards(JwtAuthGuard, AuthenticationGuard,RolesGuard)
+  @Roles('user')
+  @Delete('deletebyId/:id')
+  remove(@Param('id') id: string, @Req() req: any) {
+  const userId = req.user.userId;
+  return this.reviewService.remove(+id, userId);
   }
 }
