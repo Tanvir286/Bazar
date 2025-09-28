@@ -9,6 +9,7 @@ import { CurrentUserMiddleware } from './utility/middleware/current-user.middlew
 import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
 import { ReviewModule } from './review/review.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { ReviewModule } from './review/review.module';
     AuthModule,
     CategoryModule,
     ProductModule,
-    ReviewModule
+    ReviewModule,
+    OrderModule
   ],
   controllers: [AppController],
   providers: [AppService],

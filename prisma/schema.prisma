@@ -30,6 +30,9 @@ model User {
 
   // এক user-এর সব রিভিউ
   reviews    Review[]
+
+  // এক user-এর সব অর্ডার
+  orders     Order[]
 }
 
 model Category {
@@ -67,6 +70,9 @@ model Product {
 
   // relation to Review
   reviews    Review[]
+
+  // relation to Order
+  orderItems OrderItem[]
 }
 
 
@@ -84,4 +90,35 @@ model Review{
   // relation to User
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
+}
+
+model Order {
+  id          Int        @id @default(autoincrement())
+  totalAmount Decimal    @db.Decimal(10,2)
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  userId Int
+  user   User   @relation(fields: [userId], references: [id])
+
+  items  OrderItem[]
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  quantity  Int
+  price     Decimal  @db.Decimal(10,2)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
 }
