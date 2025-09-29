@@ -20,7 +20,7 @@ export class OrderController {
   // get all order of logged-in user
   @UseGuards(JwtAuthGuard)
   @Get('my-orders')
-  findAll(@Req() req) {
+  findAll(@Req() req: any) {
     const userId = req.user.userId;
     return this.orderService.getMyOrders(userId);
   }
@@ -28,12 +28,26 @@ export class OrderController {
   // get single order of logged-in user
   @UseGuards(JwtAuthGuard)
   @Get('my-orders/:id')
-  findOne(@Param('id') id: string, @Req() req) {
+  findOne(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
     return this.orderService.getMyOrderById(+id, userId);
   }
 
+  // User cancel his own order
+  @UseGuards(JwtAuthGuard)
+  @Patch('cancel/:id')
+  cancelOrder(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.orderService.cancelMyOrder(+id, userId);
+  }
 
+  // Order cancel by product owner (admin)
+  @UseGuards(JwtAuthGuard)
+  @Patch('seller-cancel/:id')
+  cancelSellerOrder(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.orderService.cancelSellerOrder(+id, userId);
+  }
 
 
 }
