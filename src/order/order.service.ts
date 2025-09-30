@@ -8,10 +8,60 @@ import {
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Prisma , OrderStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateOrderStripeDto } from './dto/createstripe-order.dto';
+import Stripe from 'stripe';
+
 
 @Injectable()
 export class OrderService {
-  constructor(private prisma: PrismaService) {}
+  
+  private stripe: Stripe;
+
+  constructor(private prisma: PrismaService) {
+    //this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
+  }
+  //stripe order create
+  // async createStripeOrder(dto: CreateOrderStripeDto) {
+  //   const session = await this.stripe.checkout.sessions.create({
+  //     payment_method_types: ['card'],
+  //     line_items: [
+  //       {
+  //         price_data: {
+  //           currency: 'usd',
+  //           product_data: {
+  //             name: 'new business',
+  //             description: dto.description,
+  //           },
+  //           unit_amount: Math.round(dto.price * 100),
+  //         },
+  //         quantity: 1,
+  //       },
+  //     ],
+  //     mode: 'payment',
+  //     success_url: dto.urlSuccess,
+  //     cancel_url: dto.urlCancel,
+  //     customer_email: dto.email,
+  //     client_reference_id: dto.user_id,
+  //   });
+
+  //   return {
+  //     success: true,
+  //     message: 'Stripe order created successfully',
+  //     data: session,
+  //   };
+  // }
+
+  async updateOrderStatus(orderId: number, status: OrderStatus) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+    });
+  }
+
+
 
   // create order
   async create(dto: CreateOrderDto, userId: number) {

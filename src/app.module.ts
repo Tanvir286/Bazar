@@ -10,6 +10,7 @@ import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
 import { ReviewModule } from './review/review.module';
 import { OrderModule } from './order/order.module';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { OrderModule } from './order/order.module';
     CategoryModule,
     ProductModule,
     ReviewModule,
-    OrderModule
+    OrderModule,
+    StripeModule
   ],
   controllers: [AppController],
   providers: [AppService],

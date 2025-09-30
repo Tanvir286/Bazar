@@ -3,11 +3,21 @@ import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { CreateOrderStripeDto } from './dto/createstripe-order.dto';
+
 
 @Controller('order')
 export class OrderController {
 
   constructor(private readonly orderService: OrderService) {}
+
+
+  //stripe order create
+  // @Post('stripe')
+  // async createStripeOrder(@Body() dto: CreateOrderStripeDto) {
+  //   return this.orderService.createStripeOrder(dto);
+  // }
+
 
   // create order
   @UseGuards(JwtAuthGuard)
@@ -16,6 +26,7 @@ export class OrderController {
     const userId = req.user.userId;
     return this.orderService.create(createOrderDto, userId);
   }
+
 
   // get all order of logged-in user
   @UseGuards(JwtAuthGuard)
@@ -48,6 +59,11 @@ export class OrderController {
     const userId = req.user.userId;
     return this.orderService.cancelSellerOrder(+id, userId);
   }
+
+  // admin get all orders
+
+
+
 
 
 }
