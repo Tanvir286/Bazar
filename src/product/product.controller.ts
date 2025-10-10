@@ -22,6 +22,8 @@ export class ProductController {
   return this.productService.create(createProductDto, userId);
   }
 
+  
+
   // get all product
   @Get('allProducts')
   findAll() {

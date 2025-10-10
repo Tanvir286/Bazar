@@ -6,51 +6,28 @@ import {
 } from '@nestjs/common';
 
 import { CreateOrderDto } from './dto/create-order.dto';
-import { Prisma , OrderStatus } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrderStripeDto } from './dto/createstripe-order.dto';
-import Stripe from 'stripe';
-
+import { Prisma, OrderStatus } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class OrderService {
-  
-  private stripe: Stripe;
+  constructor(private prisma: PrismaService) {}
 
-  constructor(private prisma: PrismaService) {
-    //this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
+  // ✅ Stripe order create (items নেই, শুধু price/description)
+  async createStripeOrder(dto: CreateOrderStripeDto) {
+    const order = await this.prisma.order.create({
+      data: {
+        userId: Number(dto.user_id),
+        totalAmount: new Prisma.Decimal(dto.price),
+        status: 'PENDING',
+      },
+    });
+
+    return order;
   }
-  //stripe order create
-  // async createStripeOrder(dto: CreateOrderStripeDto) {
-  //   const session = await this.stripe.checkout.sessions.create({
-  //     payment_method_types: ['card'],
-  //     line_items: [
-  //       {
-  //         price_data: {
-  //           currency: 'usd',
-  //           product_data: {
-  //             name: 'new business',
-  //             description: dto.description,
-  //           },
-  //           unit_amount: Math.round(dto.price * 100),
-  //         },
-  //         quantity: 1,
-  //       },
-  //     ],
-  //     mode: 'payment',
-  //     success_url: dto.urlSuccess,
-  //     cancel_url: dto.urlCancel,
-  //     customer_email: dto.email,
-  //     client_reference_id: dto.user_id,
-  //   });
 
-  //   return {
-  //     success: true,
-  //     message: 'Stripe order created successfully',
-  //     data: session,
-  //   };
-  // }
-
+  // ✅ Update Order Status
   async updateOrderStatus(orderId: number, status: OrderStatus) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new NotFoundException('Order not found');
@@ -61,56 +38,44 @@ export class OrderService {
     });
   }
 
-
-
-  // create order
+  // ✅ create normal order with items
   async create(dto: CreateOrderDto, userId: number) {
-    
     let totalAmount = new Prisma.Decimal(0);
 
-    // all items
     for (const item of dto.items) {
       const product = await this.prisma.product.findUnique({
         where: { id: item.productId },
       });
 
-      if (!product) {
-        throw new NotFoundException(`Product ${item.productId} not found`);
-      }
+      if (!product) throw new NotFoundException(`Product ${item.productId} not found`);
 
-      // Decimal থেকে number এ কনভার্ট করে কম্পেয়ার
       const stock = product.productstock.toNumber();
       if (stock < item.quantity) {
         throw new BadRequestException(
-          `Product ${product.producttitle}-have insufficient stock (requested ${item.quantity}, available ${stock})`,
+          `Product ${product.producttitle} has insufficient stock (requested ${item.quantity}, available ${stock})`,
         );
       }
 
-      // মোট দাম যোগ করা
       totalAmount = totalAmount.plus(
         new Prisma.Decimal(product.productprice).mul(item.quantity),
       );
     }
 
-    // সবকিছু ঠিক থাকলে একসাথে Order + OrderItem তৈরি
     const order = await this.prisma.$transaction(async (tx) => {
-      // Order তৈরি
       const newOrder = await tx.order.create({
         data: {
           userId,
           totalAmount,
-          status: 'PENDING', 
+          status: 'PENDING',
         },
       });
 
-      // প্রতিটি আইটেম Insert করা ও স্টক আপডেট
       for (const item of dto.items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
         });
-        if (!product) {
-          throw new NotFoundException(`Product ${item.productId} পাওয়া যায়নি`);
-        }
+
+        if (!product) throw new NotFoundException(`Product ${item.productId} not found`);
 
         await tx.orderItem.create({
           data: {
@@ -121,13 +86,10 @@ export class OrderService {
           },
         });
 
-        // স্টক কমানো
         await tx.product.update({
           where: { id: item.productId },
           data: {
-            productstock: new Prisma.Decimal(product.productstock).minus(
-              item.quantity,
-            ),
+            productstock: new Prisma.Decimal(product.productstock).minus(item.quantity),
           },
         });
       }
@@ -142,149 +104,103 @@ export class OrderService {
     };
   }
 
-  // get all order of logged-in user
+  // ✅ Get my all orders
   async getMyOrders(userId: number) {
     const orders = await this.prisma.order.findMany({
       where: { userId },
       include: {
-        items: {
-          include: {
-            product: true, 
-          },
-        },
+        items: { include: { product: true } },
       },
-      orderBy: { createdAt: 'desc' }, 
+      orderBy: { createdAt: 'desc' },
     });
 
-    return {
-      success: true,
-      data: orders,
-    };
+    return { success: true, data: orders };
   }
 
-  // get single order of logged-in user
+  // ✅ Get single order
   async getMyOrderById(orderId: number, userId: number) {
     const order = await this.prisma.order.findFirst({
-      where: {
-        id: orderId,
-        userId,
-      },
+      where: { id: orderId, userId },
       include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
+        items: { include: { product: true } },
       },
     });
 
-    if (!order) {
-      throw new NotFoundException(`Order ${orderId} not found`);
-    }
+    if (!order) throw new NotFoundException(`Order ${orderId} not found`);
 
-    return {
-      success: true,
-      data: order,
-    };
+    return { success: true, data: order };
   }
 
-  // User cancel his own order
+  // ✅ Cancel my order
   async cancelMyOrder(orderId: number, userId: number) {
-
-    // order 
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, userId },
       include: { items: true },
     });
 
     if (!order) throw new NotFoundException(`Order ${orderId} not found`);
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('Only pending orders can be cancelled');
+    }
+
+    const cancelled = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.order.update({
+        where: { id: orderId },
+        data: { status: OrderStatus.CANCELLED },
+      });
+
+      for (const item of order.items) {
+        const prod = await tx.product.findUnique({ where: { id: item.productId } });
+        if (!prod) throw new NotFoundException(`Product ${item.productId} not found`);
+
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            productstock: new Prisma.Decimal(prod.productstock).plus(item.quantity),
+          },
+        });
+      }
+
+      return updated;
+    });
+
+    return { success: true, message: 'Order cancelled', data: cancelled };
+  }
+
+  // ✅ Cancel by Seller
+  async cancelSellerOrder(orderId: number, sellerId: number) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: { include: { product: true } } },
+    });
+
+    if (!order) throw new NotFoundException(`Order ${orderId} not found`);
+
+    const sellerItems = order.items.filter(
+      (item) => item.product.userId === sellerId,
+    );
+    if (sellerItems.length === 0) {
+      throw new ForbiddenException('You are not the seller of this order');
+    }
 
     if (order.status !== OrderStatus.PENDING) {
       throw new BadRequestException('Only pending orders can be cancelled');
     }
 
-    // trasnaction
     const cancelled = await this.prisma.$transaction(async (tx) => {
-      // order status update
-      const updated = await tx.order.update({
-        where: { id: orderId },
-        data: { status: OrderStatus.CANCELLED },
-      });
-      // stock ফেরত
-      for (const item of order.items) {
-        const prod = await tx.product.findUnique({
-          where: { id: item.productId },
-        });
-        if (!prod)
-          throw new NotFoundException(`Product ${item.productId} not found`);
-
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            productstock: new Prisma.Decimal(prod.productstock).plus(
-              item.quantity,
-            ),
-          },
-        });
-      }
-      return updated;
-    });
-
-    return { success: true, 
-             message: 'Order cancelled', 
-             data: cancelled };
-  }
-
-   // Order cancel by product owner (admin)
-   async cancelSellerOrder(orderId: number, sellerId: number) {
-
-    // order search
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        items: {
-          include: { 
-            product: true 
-          },
-        },
-      },
-    });
-
-    console.log(order?.items);
-
-    if(!order) throw new NotFoundException(`Order ${orderId} not found`);
-
-    const sellerItems = order.items.filter(
-      (item) => item.product.userId === sellerId,
-    );
-
-    if(sellerItems.length === 0)  throw new ForbiddenException('You are not the seller of this order');
-    
-    if (order.status !== OrderStatus.PENDING) throw new BadRequestException('Only pending orders can be cancelled');
-    
-    // ২. ট্রানজ্যাকশন
-    const cancelled = await this.prisma.$transaction(async (tx) => {
-     
-      // order status update
       const updated = await tx.order.update({
         where: { id: orderId },
         data: { status: OrderStatus.CANCELLED },
       });
 
-      // stock ফেরত
       for (const item of sellerItems) {
-        const prod = await tx.product.findUnique({
-          where: { id: item.productId },
-        });
-        if (!prod)
-          throw new NotFoundException(`Product ${item.productId} not found`);
+        const prod = await tx.product.findUnique({ where: { id: item.productId } });
+        if (!prod) throw new NotFoundException(`Product ${item.productId} not found`);
 
         await tx.product.update({
           where: { id: item.productId },
           data: {
-            productstock: new Prisma.Decimal(prod.productstock).plus(
-              item.quantity,
-            ),
+            productstock: new Prisma.Decimal(prod.productstock).plus(item.quantity),
           },
         });
       }
@@ -292,11 +208,6 @@ export class OrderService {
       return updated;
     });
 
-    return { success: true, 
-             message: 'Order cancelled by seller', 
-             data: cancelled };
-  
-  
+    return { success: true, message: 'Order cancelled by seller', data: cancelled };
   }
-
 }
